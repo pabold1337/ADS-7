@@ -9,7 +9,7 @@
 
 Train createTrain(int length, const std::vector<bool>& lights) {
     Train train;
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < length; ++i) {
         train.addCar(lights[i]);
     }
     return train;
@@ -24,11 +24,12 @@ int runExperiment(int length, const std::vector<bool>& lights) {
 double averageExperiment(int length, const std::vector<bool>& lights,
                          int iterations) {
     long long totalOps = 0;
-    for (int iter = 0; iter < iterations; iter++) {
+    for (int iter = 0; iter < iterations; ++iter) {
         std::vector<bool> shuffledLights = lights;
         if (lights.size() > 1) {
-            unsigned seed = std::chrono::system_clock::now()
-                            .time_since_epoch().count() + iter;
+            unsigned int seed = static_cast<unsigned int>(
+                std::chrono::system_clock::now().time_since_epoch().count()
+                + iter);
             std::shuffle(shuffledLights.begin(), shuffledLights.end(),
                          std::mt19937(seed));
         }
@@ -49,7 +50,7 @@ int main() {
         std::vector<bool> allOn(length, true);
         double avgOn = averageExperiment(length, allOn, 100);
         std::vector<bool> random(length);
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length; ++i) {
             random[i] = dis(gen);
         }
         double avgRandom = averageExperiment(length, random, 100);
