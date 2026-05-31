@@ -20,4 +20,4 @@ class Train {
   int getOpCount();
 };
 
-#endif
+#endif  // INCLUDE_TRAIN_H__
