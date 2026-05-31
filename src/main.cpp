@@ -1,62 +1,73 @@
 // Copyright 2022 NNTU-CS
 #include "train.h"
-
-#include <algorithm>
-#include <chrono>
+#include <iostream>
 #include <fstream>
 #include <random>
-#include <vector>
+#include <chrono>
 
-Train createTrain(int length, const std::vector<bool>& lights) {
+std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+std::uniform_int_distribution<int> dist(0, 1);
+
+Train createTrain(int n, int mode) {
     Train train;
-    for (int i = 0; i < length; ++i) {
-        train.addCar(lights[i]);
+    if (mode == 0) {
+        for (int i = 0; i < n; ++i) train.addCar(false);
+    } else if (mode == 1) {
+        for (int i = 0; i < n; ++i) train.addCar(true);
+    } else {
+        for (int i = 0; i < n; ++i) train.addCar(dist(rng) == 1);
     }
     return train;
 }
 
-int runExperiment(int length, const std::vector<bool>& lights) {
-    Train train = createTrain(length, lights);
-    train.getLength();
-    return train.getOpCount();
+void runExperiment(int maxN, const std::string& fileOff, 
+                   const std::string& fileOn, const std::string& fileRand) {
+    std::ofstream fOff(fileOff), fOn(fileOn), fRand(fileRand);
+    fOff << "n,ops\n"; fOn << "n,ops\n"; fRand << "n,ops\n";
+    
+    for (int n = 2; n <= maxN; ++n) {
+        Train tOff = createTrain(n, 0);
+        tOff.getLength();
+        fOff << n << "," << tOff.getOpCount() << "\n";
+        
+        Train tOn = createTrain(n, 1);
+        tOn.getLength();
+        fOn << n << "," << tOn.getOpCount() << "\n";
+        
+        Train tRand = createTrain(n, 2);
+        tRand.getLength();
+        fRand << n << "," << tRand.getOpCount() << "\n";
+    }
 }
 
-double averageExperiment(int length, const std::vector<bool>& lights,
-                         int iterations) {
-    long long totalOps = 0;
-    for (int iter = 0; iter < iterations; ++iter) {
-        std::vector<bool> shuffledLights = lights;
-        if (lights.size() > 1) {
-            unsigned int seed = static_cast<unsigned int>(
-                std::chrono::system_clock::now().time_since_epoch().count()
-                + iter);
-            std::shuffle(shuffledLights.begin(), shuffledLights.end(),
-                         std::mt19937(seed));
-        }
-        totalOps += runExperiment(length, shuffledLights);
-    }
-    return static_cast<double>(totalOps) / iterations;
+void generateGnuplotScript() {
+    std::ofstream gp("plot.gp");
+    gp << "set terminal png size 1024,768\n";
+    gp << "set output 'result/plot.png'\n";
+    gp << "set title 'Dependency of operations on train length'\n";
+    gp << "set xlabel 'Number of cars n'\n";
+    gp << "set ylabel 'Number of operations countOp'\n";
+    gp << "set grid\n";
+    gp << "set key left top\n";
+    gp << "f_off(x) = a_off*x*x + b_off*x + c_off\n";
+    gp << "fit f_off(x) 'data_off.csv' using 1:2 via a_off,b_off,c_off\n";
+    gp << "f_on(x) = a_on*x*x + b_on*x + c_on\n";
+    gp << "fit f_on(x) 'data_on.csv' using 1:2 via a_on,b_on,c_on\n";
+    gp << "f_rand(x) = a_rand*x*x + b_rand*x + c_rand\n";
+    gp << "fit f_rand(x) 'data_random.csv' using 1:2 via a_rand,b_rand,c_rand\n";
+    gp << "plot 'data_off.csv' using 1:2 title 'All lights off' with points pt 7, \\\n";
+    gp << "     f_off(x) title 'Trend (off) ~ n^2' with lines, \\\n";
+    gp << "     'data_on.csv' using 1:2 title 'All lights on' with points pt 9, \\\n";
+    gp << "     f_on(x) title 'Trend (on) ~ n^2' with lines, \\\n";
+    gp << "     'data_random.csv' using 1:2 title 'Random' with points pt 5, \\\n";
+    gp << "     f_rand(x) title 'Trend (random) ~ n^2' with lines\n";
+    gp.close();
+    system("gnuplot plot.gp");
 }
 
 int main() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 1);
-    std::ofstream csvFile("results.csv");
-    csvFile << "Length;AllOff;AllOn;Random\n";
-    for (int length = 2; length <= 1000; length += 2) {
-        std::vector<bool> allOff(length, false);
-        double avgOff = averageExperiment(length, allOff, 100);
-        std::vector<bool> allOn(length, true);
-        double avgOn = averageExperiment(length, allOn, 100);
-        std::vector<bool> random(length);
-        for (int i = 0; i < length; ++i) {
-            random[i] = dis(gen);
-        }
-        double avgRandom = averageExperiment(length, random, 100);
-        csvFile << length << ";" << avgOff << ";" << avgOn << ";"
-                << avgRandom << "\n";
-    }
-    csvFile.close();
+    int maxN = 150;
+    runExperiment(maxN, "data_off.csv", "data_on.csv", "data_random.csv");
+    generateGnuplotScript();
     return 0;
 }
