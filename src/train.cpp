@@ -3,22 +3,29 @@
 
 Train::Train() : countOp(0), first(nullptr) {}
 
+Train::~Train() {
+    if (!first) return;
+    Car* cur = first->next;
+    while (cur != first) {
+        Car* tmp = cur->next;
+        delete cur;
+        cur = tmp;
+    }
+    delete first;
+}
+
 void Train::addCar(bool light) {
-    Car* newCar = new Car();
-    newCar->light = light;
-    newCar->next = nullptr;
-    newCar->prev = nullptr;
-    
+    Car* car = new Car{light, nullptr, nullptr};
     if (!first) {
-        first = newCar;
-        first->next = first;
-        first->prev = first;
+        car->next = car;
+        car->prev = car;
+        first = car;
     } else {
         Car* last = first->prev;
-        last->next = newCar;
-        newCar->prev = last;
-        newCar->next = first;
-        first->prev = newCar;
+        last->next = car;
+        car->prev = last;
+        car->next = first;
+        first->prev = car;
     }
 }
 
