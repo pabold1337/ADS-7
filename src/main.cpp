@@ -4,6 +4,7 @@
 #include <fstream>
 #include <random>
 #include <chrono>
+#include <cstdlib>
 
 std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
 std::uniform_int_distribution<int> dist(0, 1);
@@ -62,7 +63,9 @@ void generateGnuplotScript() {
     gp << "     'data_random.csv' using 1:2 title 'Random' with points pt 5, \\\n";
     gp << "     f_rand(x) title 'Trend (random) ~ n^2' with lines\n";
     gp.close();
-    system("gnuplot plot.gp");
+    
+    int ret = system("gnuplot plot.gp");
+    (void)ret;
 }
 
 int main() {
