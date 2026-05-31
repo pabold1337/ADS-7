@@ -1,5 +1,6 @@
 // Copyright 2022 NNTU-CS
 #include "train.h"
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <random>
